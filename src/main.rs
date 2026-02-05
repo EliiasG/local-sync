@@ -602,6 +602,20 @@ fn get_sync_files(config: &Config) -> Result<Vec<String>> {
         }
     }
 
+    // Always include .git directory if it exists
+    let git_dir = config.git_root.join(".git");
+    if git_dir.exists() && git_dir.is_dir() {
+        for file_path in walkdir(&git_dir)? {
+            if let Ok(rel_path) = file_path.strip_prefix(&config.git_root) {
+                let rel_str = rel_path.to_string_lossy().to_string();
+                if !files_set.contains(&rel_str) {
+                    files_set.insert(rel_str.clone());
+                    files.push(rel_str);
+                }
+            }
+        }
+    }
+
     // Add additional files/directories that aren't already in git
     for entry in &config.additional_files {
         let full_path = config.git_root.join(entry);
