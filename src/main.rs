@@ -594,6 +594,14 @@ fn get_sync_files(config: &Config) -> Result<Vec<String>> {
     let mut files = get_git_files(&config.git_root)?;
     let mut files_set: HashSet<_> = files.iter().cloned().collect();
 
+    // Always include git config files if they exist
+    for git_file in &[".gitignore", ".gitattributes"] {
+        if config.git_root.join(git_file).exists() && !files_set.contains(*git_file) {
+            files_set.insert(git_file.to_string());
+            files.push(git_file.to_string());
+        }
+    }
+
     // Add additional files/directories that aren't already in git
     for entry in &config.additional_files {
         let full_path = config.git_root.join(entry);
