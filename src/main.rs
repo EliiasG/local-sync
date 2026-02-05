@@ -61,7 +61,7 @@ fn cmd_init(args: &[String]) -> Result<()> {
         bail!("Usage: local-sync init <path>");
     }
 
-    let nas_path = &args[2];
+    let nas_path = PathBuf::from(&args[2]);
     let project_root = std::env::current_dir()?;
     let config_path = project_root.join(".local-sync");
 
@@ -72,11 +72,18 @@ fn cmd_init(args: &[String]) -> Result<()> {
         );
     }
 
-    fs::write(&config_path, format!("{}\n", nas_path))
+    fs::write(&config_path, format!("{}\n", nas_path.display()))
         .with_context(|| format!("Failed to write {}", config_path.display()))?;
 
-    println!("Initialized local-sync with NAS path: {}", nas_path);
+    println!("Initialized local-sync with NAS path: {}", nas_path.display());
     println!("Config written to: {}", config_path.display());
+
+    // Check if NAS already has this project
+    let manifest_path = nas_path.join(".local-sync-manifest");
+    if manifest_path.exists() {
+        println!();
+        println!("Project already exists on NAS. Run 'local-sync pull' to download.");
+    }
 
     Ok(())
 }
