@@ -310,7 +310,7 @@ fn cmd_push() -> Result<()> {
 }
 
 fn cmd_pull() -> Result<()> {
-    let config = get_config()?;
+    let config = get_config_for_pull()?;
     let manifest = load_manifest(&config.nas_path)?;
 
     if manifest.files.is_empty() && !config.nas_path.exists() {
@@ -534,13 +534,22 @@ struct Config {
 
 fn get_config() -> Result<Config> {
     let git_root = find_git_root()?;
-    let config_path = git_root.join(".local-sync");
+    load_config_from_root(git_root)
+}
+
+fn get_config_for_pull() -> Result<Config> {
+    let project_root = find_project_root()?;
+    load_config_from_root(project_root)
+}
+
+fn load_config_from_root(root: PathBuf) -> Result<Config> {
+    let config_path = root.join(".local-sync");
 
     if !config_path.exists() {
         bail!(
-            "No .local-sync config file found in git root: {}\n\
+            "No .local-sync config file found in: {}\n\
              Create a .local-sync file containing the NAS target path.",
-            git_root.display()
+            root.display()
         );
     }
 
@@ -568,7 +577,7 @@ fn get_config() -> Result<Config> {
         .collect();
 
     Ok(Config {
-        git_root,
+        git_root: root,
         nas_path,
         additional_files,
     })
@@ -618,6 +627,18 @@ fn find_git_root() -> Result<PathBuf> {
         .to_string();
 
     Ok(PathBuf::from(path))
+}
+
+fn find_project_root() -> Result<PathBuf> {
+    let mut current = std::env::current_dir()?;
+    loop {
+        if current.join(".local-sync").exists() {
+            return Ok(current);
+        }
+        if !current.pop() {
+            bail!("No .local-sync file found in current directory or any parent directory");
+        }
+    }
 }
 
 fn get_git_files(git_root: &Path) -> Result<Vec<String>> {
