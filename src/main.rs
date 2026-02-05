@@ -62,8 +62,8 @@ fn cmd_init(args: &[String]) -> Result<()> {
     }
 
     let nas_path = &args[2];
-    let git_root = find_git_root()?;
-    let config_path = git_root.join(".local-sync");
+    let project_root = std::env::current_dir()?;
+    let config_path = project_root.join(".local-sync");
 
     if config_path.exists() {
         bail!(
